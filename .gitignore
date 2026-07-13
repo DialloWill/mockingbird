@@ -1,0 +1,22 @@
+# Environment variables
+.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Logs
+logs/
+
+# Test artifacts
+data/scraped_data/*
+!data/scraped_data/.gitkeep
+*.png
+
+# Tool configs
+.qodo/
+
+# OS
+.DS_Store
+Thumbs.db
