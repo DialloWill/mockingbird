@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Jarvis Particle Morph — POC</title>
+<style>
+  :root { color-scheme: dark; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #0a0a0f;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  #canvas-container {
+    position: fixed;
+    inset: 0;
+  }
+  canvas { display: block; }
+
+  #hud {
+    position: fixed;
+    left: 50%;
+    bottom: 36px;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 10;
+  }
+
+  #morph-btn {
+    background: rgba(10, 14, 20, 0.55);
+    border: 1px solid rgba(0, 212, 255, 0.45);
+    color: #bdf3ff;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 28px;
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 18px rgba(0, 170, 255, 0.15), inset 0 0 12px rgba(0, 170, 255, 0.08);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease, transform 0.15s ease;
+  }
+  #morph-btn:hover {
+    border-color: rgba(0, 212, 255, 0.9);
+    box-shadow: 0 0 26px rgba(0, 200, 255, 0.35), inset 0 0 14px rgba(0, 200, 255, 0.15);
+  }
+  #morph-btn:active { transform: scale(0.97); }
+
+  #hint {
+    color: rgba(150, 200, 220, 0.5);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+
+  #status {
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    color: rgba(140, 200, 220, 0.55);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    z-index: 10;
+    line-height: 1.6;
+  }
+  #status span { color: #6be8ff; }
+</style>
+</head>
+<body>
+  <div id="canvas-container"></div>
+
+  <div id="status">
+    shape: <span id="shape-label">sphere</span><br/>
+    fps: <span id="fps-label">--</span>
+  </div>
+
+  <div id="hud">
+    <button id="morph-btn">Morph</button>
+    <div id="hint">press SPACE or click Morph to transition</div>
+  </div>
+
+  <!--
+    Three.js is loaded locally from ./vendor/three.module.min.js (r160).
+    No npm install / build step is required to view this page — just serve
+    this folder statically and open index.html. To use a CDN instead, swap
+    the import path below for e.g.
+    "https://unpkg.com/three@0.160.0/build/three.module.js".
+  -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three.module.min.js"
+    }
+  }
+  </script>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
