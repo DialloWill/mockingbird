@@ -1,11 +1,11 @@
-from modules.brain import JarvisBrain
+from modules.brain import MockingbirdBrain
 
-jarvis = JarvisBrain()
+mockingbird = MockingbirdBrain()
 
 print("=" * 50)
-print(jarvis.think("My name is John"))
+print(mockingbird.think("My name is John"))
 print("=" * 50)
-print(jarvis.think("What's my name?"))
+print(mockingbird.think("What's my name?"))
 print("=" * 50)
-print(jarvis.think("Tell me a dad joke"))
+print(mockingbird.think("Tell me a dad joke"))
 print("=" * 50)

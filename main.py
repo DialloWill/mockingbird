@@ -1,17 +1,17 @@
 # main.py
 import os
-from modules.brain import JarvisBrain
+from modules.brain import MockingbirdBrain
 from modules.automation import ComputerController
 from modules.web_scraper import WebScraper
 from modules.web_driver import BrowserAutomation
 from config.settings import GROQ_API_KEY
 
-class JarvisBot:
+class MockingbirdBot:
     def __init__(self):
-        """Initialize all Jarvis components"""
-        print("🤖 Initializing Jarvis Bot...")
+        """Initialize all Mockingbird components"""
+        print("🤖 Initializing Mockingbird Bot...")
         
-        self.brain = JarvisBrain()
+        self.brain = MockingbirdBrain()
         self.computer = ComputerController()
         self.scraper = WebScraper()
         self.browser = BrowserAutomation()
@@ -19,8 +19,8 @@ class JarvisBot:
         print("✅ All systems online!")
 
     def start(self):
-        """Start Jarvis in interactive mode"""
-        print("\n👋 Hello! I'm Jarvis, your AI assistant.")
+        """Start Mockingbird in interactive mode"""
+        print("\n👋 Hello! I'm Mockingbird, your AI assistant.")
         print("Type 'exit' or 'quit' to stop.\n")
         
         while True:
@@ -34,7 +34,7 @@ class JarvisBot:
                 continue
             
             response = self.process_command(user_input)
-            print(f"\nJarvis: {response}\n")
+            print(f"\nMockingbird: {response}\n")
 
     def process_command(self, user_input):
         """Decide what to do with user's command"""
@@ -58,6 +58,6 @@ class JarvisBot:
             return response
 
 if __name__ == "__main__":
-    jarvis = JarvisBot()
-    jarvis.start()   
+    mockingbird = MockingbirdBot()
+    mockingbird.start()   
         

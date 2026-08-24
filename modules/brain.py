@@ -1,11 +1,11 @@
 from groq import Groq
 from config.settings import GROQ_API_KEY, MODEL_NAME
 
-class JarvisBrain:
+class MockingbirdBrain:
     def __init__(self):
         self.client = Groq(api_key=GROQ_API_KEY)
         self.conversation_history = []
-        print("🧠 Jarvis brain initialized!")
+        print("🧠 Mockingbird brain initialized!")
     
     def think(self, user_input):
         try:

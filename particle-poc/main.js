@@ -464,7 +464,7 @@ async function sendMessage(rawMessage) {
   } catch (err) {
     const isNetworkErr = err instanceof TypeError;
     const msg = isNetworkErr
-      ? "Couldn't reach Jarvis's API — is the Flask server running on localhost:5000?"
+      ? "Couldn't reach Mockingbird's API — is the Flask server running on localhost:5000?"
       : err.message;
     enterErrorIdle(msg);
   } finally {

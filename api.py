@@ -1,19 +1,22 @@
 # api.py
+import os
 import requests
 from flask import Flask, request, jsonify, Response
 from flask_cors import CORS
 
-from modules.brain import JarvisBrain
-from config.settings import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID
+from modules.brain import MockingbirdBrain
+from config.settings import ELEVENLABS_API_KEY, ELEVENLABS_VOICE_ID  # kept for reference/fallback if needed
 
 app = Flask(__name__)
 CORS(app)
 
-ELEVENLABS_TTS_URL = f"https://api.elevenlabs.io/v1/text-to-speech/{ELEVENLABS_VOICE_ID}"
+# --- Voicebox (local, free TTS) replaces ElevenLabs as the premium voice engine ---
+VOICEBOX_URL = "http://127.0.0.1:17493/generate/stream"
+VOICEBOX_PROFILE_ID = "f15bdd00-98ca-4f55-9bd2-501ac465ac48"  # "Mockingbird" profile (Kokoro / Onyx)
 
-# Single JarvisBrain instance shared across requests so conversation_history
+# Single MockingbirdBrain instance shared across requests so conversation_history
 # persists for the life of the server process.
-brain = JarvisBrain()
+brain = MockingbirdBrain()
 
 
 @app.route("/health", methods=["GET"])
@@ -35,7 +38,7 @@ def chat():
     try:
         response = brain.think(message)
     except Exception as e:
-        return jsonify({"error": f"Jarvis failed to process the message: {str(e)}"}), 500
+        return jsonify({"error": f"Mockingbird failed to process the message: {str(e)}"}), 500
 
     return jsonify({"response": response})
 
@@ -51,9 +54,9 @@ def speak():
     if not isinstance(text, str) or not text.strip():
         return jsonify({"error": "'text' must be a non-empty string."}), 400
 
-    # This endpoint only exists to keep the ElevenLabs key server-side; the
-    # free engine runs entirely client-side via the browser's Web Speech API
-    # and never calls this route.
+    # This endpoint only exists to keep the TTS call server-side; the free
+    # engine runs entirely client-side via the browser's Web Speech API and
+    # never calls this route.
     engine = data.get("engine", "premium")
     if engine != "premium":
         return jsonify({
@@ -61,26 +64,22 @@ def speak():
                      "Use the browser's built-in speechSynthesis for 'free'."
         }), 400
 
-    if not ELEVENLABS_API_KEY:
-        return jsonify({"error": "ELEVENLABS_API_KEY is not configured on the server."}), 503
-
     try:
         upstream = requests.post(
-            ELEVENLABS_TTS_URL,
-            headers={
-                "xi-api-key": ELEVENLABS_API_KEY,
-                "Content-Type": "application/json",
-                "Accept": "audio/mpeg",
-            },
+            VOICEBOX_URL,
+            headers={"Content-Type": "application/json"},
             json={
+                "profile_id": VOICEBOX_PROFILE_ID,
                 "text": text,
-                "model_id": "eleven_monolingual_v1",
-                "voice_settings": {"stability": 0.5, "similarity_boost": 0.75},
+                "language": "en",
+                "engine": "kokoro",
             },
-            timeout=20,
+            timeout=60,
         )
     except requests.RequestException as e:
-        return jsonify({"error": f"Couldn't reach ElevenLabs: {str(e)}"}), 502
+        return jsonify({
+            "error": f"Couldn't reach Voicebox — is the Voicebox app running? ({str(e)})"
+        }), 502
 
     if upstream.status_code != 200:
         try:
@@ -88,11 +87,11 @@ def speak():
         except ValueError:
             detail = upstream.text
         return jsonify({
-            "error": f"ElevenLabs request failed ({upstream.status_code})",
+            "error": f"Voicebox generation failed ({upstream.status_code})",
             "detail": detail,
         }), 502
 
-    return Response(upstream.content, mimetype="audio/mpeg")
+    return Response(upstream.content, mimetype="audio/wav")
 
 
 if __name__ == "__main__":

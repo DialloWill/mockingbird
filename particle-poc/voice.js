@@ -13,7 +13,14 @@ export const VoiceEngine = { FREE: "free", PREMIUM: "premium" };
 
 const SPEAK_ENDPOINT = "http://localhost:5000/speak";
 
-let engine = VoiceEngine.FREE;
+// --- Fix #3: default engine depends on environment ---
+// During local dev/testing, default to FREE so casual testing doesn't
+// burn ElevenLabs credits. Flip to PREMIUM for production builds by
+// setting IS_PRODUCTION = true (or wire this to an actual build-time env
+// var / config flag once you have a build step).
+const IS_PRODUCTION = false; // TODO: replace with real env detection
+let engine = IS_PRODUCTION ? VoiceEngine.PREMIUM : VoiceEngine.FREE;
+
 export function setVoiceEngine(next) {
   engine = next;
 }
@@ -35,18 +42,12 @@ function ensureAudioContext() {
   return audioCtx;
 }
 
-// Browsers block audio until a real user gesture has occurred at least
-// once; call this from a click/keydown handler as early as possible.
 export function unlockAudio() {
   const ctx = ensureAudioContext();
   if (ctx.state === "suspended") ctx.resume().catch(() => {});
   return ctx;
 }
 
-// Maps an AnalyserNode frequency snapshot onto `barCount` bars. Voice
-// energy concentrates in the lower/mid bins, so bins are sampled with a
-// mild logarithmic spread rather than linearly — otherwise the back half
-// of the bars would always read near-zero.
 function mapFrequenciesToBars(freqData, barCount) {
   const bars = new Float32Array(barCount);
   const usableBins = Math.floor(freqData.length * 0.75);
@@ -72,7 +73,7 @@ function speakFree(text) {
       resolve({ ok: false, engine: VoiceEngine.FREE, error: "speechSynthesis is not supported in this browser." });
       return;
     }
-    window.speechSynthesis.cancel(); // stop anything already in flight
+    window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(text);
     utter.onend = () => resolve({ ok: true, engine: VoiceEngine.FREE, analysed: false });
     utter.onerror = (e) =>
@@ -120,13 +121,22 @@ async function speakPremium(text, { barCount, onAmplitude }) {
     source.connect(analyser);
     analyser.connect(ctx.destination);
   } catch (_err) {
-    // Web Audio graph wiring failed for some reason — fall back to plain
-    // playback with no amplitude analysis rather than losing audio.
     audioEl.volume = 1;
   }
 
   const freqData = source ? new Uint8Array(analyser.frequencyBinCount) : null;
   let rafId = null;
+
+  // --- Fix #1: always disconnect the source node when we're done with it ---
+  function cleanupAudioGraph() {
+    if (source) {
+      try {
+        source.disconnect();
+      } catch (_e) {
+        /* already disconnected, ignore */
+      }
+    }
+  }
 
   function tick() {
     if (freqData && onAmplitude) {
@@ -141,25 +151,33 @@ async function speakPremium(text, { barCount, onAmplitude }) {
     audioEl.onended = () => {
       if (rafId) cancelAnimationFrame(rafId);
       URL.revokeObjectURL(url);
+      cleanupAudioGraph();
       resolve({ ok: true, engine: VoiceEngine.PREMIUM, analysed: !!freqData });
     };
     audioEl.onerror = () => {
       if (rafId) cancelAnimationFrame(rafId);
+      URL.revokeObjectURL(url);
+      cleanupAudioGraph();
       resolve({ ok: false, engine: VoiceEngine.PREMIUM, error: "audio playback failed" });
     };
-    audioEl.play().catch((err) =>
-      resolve({ ok: false, engine: VoiceEngine.PREMIUM, error: err.message })
-    );
+    audioEl.play().catch((err) => {
+      cleanupAudioGraph();
+      resolve({ ok: false, engine: VoiceEngine.PREMIUM, error: err.message });
+    });
   });
 }
 
-// speak(text, { barCount, onAmplitude }) -> Promise<{ ok, engine, analysed?, error? }>
-// onAmplitude(Float32Array(barCount)) is called on every animation frame
-// while PREMIUM audio is actually playing. It is never called for FREE —
-// callers should keep using their own simulated animation in that case.
+// --- Fix #2: automatic fallback to FREE if PREMIUM fails ---
+// speak(text, { barCount, onAmplitude }) -> Promise<{ ok, engine, analysed?, error?, fellBack? }>
 export async function speak(text, { barCount = 32, onAmplitude } = {}) {
   if (engine === VoiceEngine.PREMIUM) {
-    return speakPremium(text, { barCount, onAmplitude });
+    const result = await speakPremium(text, { barCount, onAmplitude });
+    if (!result.ok) {
+      console.warn(`[voice] PREMIUM failed (${result.error}) — falling back to FREE.`);
+      const fallback = await speakFree(text);
+      return { ...fallback, fellBack: true, premiumError: result.error };
+    }
+    return result;
   }
   return speakFree(text);
 }

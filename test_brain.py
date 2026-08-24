@@ -1,8 +1,8 @@
-from modules.brain import JarvisBrain
+from modules.brain import MockingbirdBrain
 
-jarvis = JarvisBrain()
+mockingbird = MockingbirdBrain()
 
-response = jarvis.think("Hello! What's your name?")
+response = mockingbird.think("Hello! What's your name?")
 print(response)
 
-print(jarvis.clear_memory())
+print(mockingbird.clear_memory())
