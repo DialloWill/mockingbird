@@ -4,7 +4,12 @@ from config.settings import GROQ_API_KEY, MODEL_NAME
 class MockingbirdBrain:
     def __init__(self):
         self.client = Groq(api_key=GROQ_API_KEY)
-        self.conversation_history = []
+        self.conversation_history = [
+            {
+                "role": "system",
+                "content": "You are Mockingbird, a helpful AI assistant. Always identify yourself as Mockingbird, never as any other AI model or assistant."
+            }
+        ]
         print("🧠 Mockingbird brain initialized!")
     
     def think(self, user_input):
@@ -32,5 +37,10 @@ class MockingbirdBrain:
             return f"Error in brain processing: {str(e)}"
         
     def clear_memory(self):
-        self.conversation_history = []
+        self.conversation_history = [
+            {
+                "role": "system",
+                "content": "You are Mockingbird, a helpful AI assistant. Always identify yourself as Mockingbird, never as any other AI model or assistant."
+            }
+        ]
         return "🧠 Memory cleared!"
